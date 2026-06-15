@@ -8,7 +8,7 @@ import ProgressCard from "../components/ProgressCard";
 
 const Home = () => {
   const [tasks, setTasks] = useState([]);
-  const [initialLoading, setInitialLoading] = useState(true); // only for first fetch
+  const [initialLoading, setInitialLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState("all");
 
