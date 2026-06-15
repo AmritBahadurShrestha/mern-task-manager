@@ -8,7 +8,7 @@ import ProgressCard from "../components/ProgressCard";
 
 const Home = () => {
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // only for first fetch
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState("all");
 
@@ -16,7 +16,6 @@ const Home = () => {
 
   const getTasks = async () => {
     try {
-      setLoading(true);
       const start = Date.now();
       const { data } = await API.get("/tasks");
       const elapsed = Date.now() - start;
@@ -25,7 +24,7 @@ const Home = () => {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
@@ -43,26 +42,34 @@ const Home = () => {
     }
   };
 
+  // Optimistic — update state immediately, revert on error
   const toggleTask = async (id) => {
+    const task = tasks.find((t) => t._id === id);
+    if (!task) return;
+    const updated = !task.completed;
+    setTasks((prev) =>
+      prev.map((t) => (t._id === id ? { ...t, completed: updated } : t))
+    );
     try {
-      const task = tasks.find((t) => t._id === id);
-      if (!task) return;
-      const updated = !task.completed;
       await API.patch(`/tasks/${id}`, { completed: updated });
-      setTasks((prev) =>
-        prev.map((t) => (t._id === id ? { ...t, completed: updated } : t))
-      );
     } catch (err) {
       console.error(err);
+      setTasks((prev) =>
+        prev.map((t) => (t._id === id ? { ...t, completed: !updated } : t))
+      );
     }
   };
 
+  // Optimistic — remove immediately, restore on error
   const deleteTask = async (id) => {
+    const task = tasks.find((t) => t._id === id);
+    if (!task) return;
+    setTasks((prev) => prev.filter((t) => t._id !== id));
     try {
       await API.delete(`/tasks/${id}`);
-      setTasks((prev) => prev.filter((t) => t._id !== id));
     } catch (err) {
       console.error(err);
+      setTasks((prev) => [task, ...prev]);
     }
   };
 
@@ -73,6 +80,8 @@ const Home = () => {
     if (filter === "done") return t.completed;
     return true;
   });
+
+  const hasTasks = tasks.length > 0 || adding;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-slate-100 to-slate-200">
@@ -92,16 +101,31 @@ const Home = () => {
           </p>
         </div>
 
-        {/* PROGRESS */}
-        {!loading && tasks.length > 0 && (
+        {/* PROGRESS — skeleton during initial load, real card after */}
+        {initialLoading ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-full bg-slate-100 animate-pulse shrink-0" />
+            <div className="flex flex-col gap-2 flex-1">
+              <div className="h-3.5 w-32 rounded-lg bg-slate-100 animate-pulse" />
+              <div className="h-3 w-24 rounded-lg bg-slate-100 animate-pulse" />
+            </div>
+            <div className="h-1.5 rounded-full bg-slate-100 animate-pulse flex-1 hidden sm:block" />
+          </div>
+        ) : tasks.length > 0 ? (
           <ProgressCard total={tasks.length} completed={completedTasks} />
-        )}
+        ) : null}
 
         {/* FORM */}
         <TaskForm addTask={addTask} loading={adding} />
 
         {/* FILTERS */}
-        {!loading && tasks.length > 0 && (
+        {initialLoading ? (
+          <div className="flex gap-2 mb-3 mt-6">
+            <div className="w-10 h-7 rounded-full bg-slate-100 animate-pulse" />
+            <div className="w-16 h-7 rounded-full bg-slate-100 animate-pulse" />
+            <div className="w-24 h-7 rounded-full bg-slate-100 animate-pulse" />
+          </div>
+        ) : hasTasks ? (
           <div className="flex gap-2 mb-3 mt-6">
             {["all", "active", "done"].map((f) => (
               <button
@@ -117,46 +141,34 @@ const Home = () => {
               </button>
             ))}
           </div>
-        )}
-
+        ) : null}
+        
         {/* SECTION LABEL */}
-        {!loading && tasks.length > 0 && (
+        {initialLoading ? (
+          <div className="h-3 w-28 rounded-md bg-slate-100 animate-pulse mb-2" />
+        ) : hasTasks ? (
           <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-2 pl-0.5">
-            {filteredTasks.length}{" "}
+            {filteredTasks.length + (adding ? 1 : 0)}{" "}
             {filter === "done" ? "completed" : filter === "active" ? "active" : "total"}{" "}
-            task{filteredTasks.length !== 1 ? "s" : ""}
+            task{(filteredTasks.length + (adding ? 1 : 0)) !== 1 ? "s" : ""}
           </p>
-        )}
+        ) : null}
 
         {/* LIST */}
         <div className="mt-1">
-          {loading ? (
-            <div className="space-y-3">
+          {initialLoading ? (
+            <div className="flex flex-col gap-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <TaskSkeleton key={i} />
               ))}
-            </div>
-          ) : filteredTasks.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-12 text-center">
-              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-                </svg>
-              </div>
-              <h3 className="text-base font-semibold text-blue-900 mb-1">
-                {filter === "done" ? "No completed tasks yet" : "No tasks yet"}
-              </h3>
-              <p className="text-slate-400 text-sm">
-                {filter === "done"
-                  ? "Complete a task to see it here"
-                  : "Add your first task above to get started"}
-              </p>
             </div>
           ) : (
             <TaskList
               tasks={filteredTasks}
               toggleTask={toggleTask}
               deleteTask={deleteTask}
+              adding={adding}
+              filter={filter}
             />
           )}
         </div>

@@ -1,7 +1,7 @@
 const TaskItem = ({ task, toggleTask, deleteTask }) => {
   return (
     <div
-      className={`group flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all duration-200 ${
+      className={`group flex items-center gap-3 px-4 py-3.5 min-h-13 rounded-2xl border transition-all duration-200 ${
         task.completed
           ? "bg-slate-50 border-slate-100"
           : "bg-white border-slate-100 hover:border-blue-200 hover:shadow-sm"
