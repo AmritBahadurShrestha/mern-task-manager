@@ -17,31 +17,24 @@ const app = express();
 //   credentials: true
 // }));
 
-const allowedOrigins = [];
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL
+];
 
-if (process.env.NODE_ENV !== "production") {
-  allowedOrigins.push("http://localhost:5173");
-}
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow Postman / server-to-server requests
+    if (!origin) return callback(null, true);
 
-if (process.env.CLIENT_URL) {
-  allowedOrigins.push(process.env.CLIENT_URL);
-}
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // allow server-to-server / Postman
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+}));
 
 app.use(express.json());
 
