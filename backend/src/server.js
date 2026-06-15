@@ -38,7 +38,7 @@ app.use("/api/tasks", taskRoutes);
 
 // test route (optional but useful)
 app.get("/", (req, res) => {
-  res.send("API is Running...");
+  res.send("API Running...");
 });
 
 // error handler
