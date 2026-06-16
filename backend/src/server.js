@@ -1,9 +1,9 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
 
-import connectDB from "./config/db.js";
-import taskRoutes from "./routes/taskRoutes.js";
+import connectDB from './config/db.js';
+import taskRoutes from './routes/taskRoutes.js';
 
 dotenv.config();
 
@@ -12,39 +12,38 @@ connectDB();
 const app = express();
 
 // middleware
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.CLIENT_URL
-];
+const allowedOrigins = ['http://localhost:5173', process.env.CLIENT_URL];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // allow Postman / server-to-server requests
-    if (!origin) return callback(null, true);
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow Postman / server-to-server requests
+      if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true
-}));
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 
 // routes
-app.use("/api/tasks", taskRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // test route (optional but useful)
-app.get("/", (req, res) => {
-  res.send("API Running...");
+app.get('/', (req, res) => {
+  res.send('API Running...');
 });
 
 // error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   console.error(err);
-  res.status(500).json({ message: "Server Error" });
+  res.status(500).json({ message: 'Server Error' });
 });
 
 const PORT = process.env.PORT || 5000;

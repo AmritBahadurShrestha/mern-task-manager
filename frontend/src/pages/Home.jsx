@@ -14,21 +14,28 @@ const Home = () => {
 
   const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-  const getTasks = async () => {
-    try {
-      const start = Date.now();
-      const { data } = await API.get("/tasks");
-      const elapsed = Date.now() - start;
-      if (elapsed < 800) await delay(800 - elapsed);
-      setTasks(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setInitialLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const start = Date.now();
+        const { data } = await API.get("/tasks");
 
-  useEffect(() => { getTasks(); }, []);
+        const elapsed = Date.now() - start;
+
+        if (elapsed < 800) {
+          await delay(800 - elapsed);
+        }
+
+        setTasks(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, []);
 
   const addTask = async (title) => {
     try {
