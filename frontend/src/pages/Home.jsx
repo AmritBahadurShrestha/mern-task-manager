@@ -19,10 +19,13 @@ const Home = () => {
       try {
         const start = Date.now();
         const { data } = await API.get("/tasks");
+
         const elapsed = Date.now() - start;
+
         if (elapsed < 800) {
           await delay(800 - elapsed);
         }
+
         setTasks(data);
       } catch (err) {
         console.error(err);
@@ -30,6 +33,7 @@ const Home = () => {
         setInitialLoading(false);
       }
     };
+
     fetchTasks();
   }, []);
 
